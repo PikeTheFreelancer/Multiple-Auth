@@ -1,64 +1,406 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+1. Tạo project
+Tạo một project laravel bằng composer với câu lệnh
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+composer create-project --prefer-dist laravel/laravel multiple-auth
 
-## About Laravel
+2. Cơ sở dữ liệu
+a. File .env
+Mở project lên và thực hiện chỉnh sửa file .env để kết nối cơ sở dữ liệu. Ở đây mình dùng mysql
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=<database_name>
+DB_USERNAME=<username>
+DB_PASSWORD=<password>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Trong đó,
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+<database_name> là tên cơ sở dữ liệu của bạn tạo ra ở mysql,
+<username> là tên đăng nhập để truy cập vào database, thông thường <username> là root.
+<password> là mật khẩu để truy cập vào database, thông thường <password> trống, nếu bạn có đặt mật khẩu thì thay thế bằng mật khẩu bạn đã cấu hình.
+b. Cấu trúc các bảng
+Để sử dụng được multiple authenticate chúng ta cần hai bảng admins và users để lưu thông tin đăng nhập cho hai loại đối tượng này.
 
-## Learning Laravel
+Admins
+Tạo bảng admins bằng cách dùng migration
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+php artisan make:migration create_admins_table --create=admins
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Chạy câu lệnh trên để tạo một migration mới cho bảng admins và thêm các cột gồm: id, email, password, timestamps
 
-## Laravel Sponsors
+    public function up()
+    {
+        Schema::create('admins', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+    }
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Users
+Bảng users cũng có cấu trúc tương tự với bảng admin nên chúng ta có thể dùng mặc định của laravel đã tạo ra.
 
-### Premium Partners
+Chạy câu lệnh migrate để tạo các bảng
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+php artisan migrate
 
-## Contributing
+c. Seed dữ liệu
+Mở file database\seeders\DatabaseSeeder.php và sửa
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+<?php
 
-## Code of Conduct
+namespace Database\Seeders;
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
-## Security Vulnerabilities
+class DatabaseSeeder extends Seeder
+{
+    public function run()
+    {
+        DB::table('admins')->insert([
+            [
+                'name' => 'Admin',
+                'email' => 'admin@gmail.com',
+                'password' => bcrypt('admin123'),
+            ]
+        ]);
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+        DB::table('users')->insert([
+            [
+                'name' => 'User',
+                'email' => 'user@gmail.com',
+                'password' => bcrypt('admin123'),
+            ]
+        ]);
+    }
+}
 
-## License
+Chạy lệnh sau để seed dữ liệu
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+php artisan db:seed
+
+3. Tạo và cấu hình Models
+Trong thư mục app\Models có sẵn file User.php và tạo thêm file Admin.php tương ứng với hai bảng trên.
+
+app/Models/Admin.php
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class Admin extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    protected $table = 'admins';
+
+    protected $guarded = 'admin';
+
+    protected $fillable = [
+        'name', 'email', 'password',
+    ];
+
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
+}
+
+
+app/Models/User.php
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    protected $table = 'users';
+
+    protected $fillable = [
+        'name', 'email', 'password',
+    ];
+
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
+}
+
+
+II. Multiple Authenticate
+Vậy là đã xong phần chuẩn bị cơ bản. Bây giờ chúng ta sẽ thực hiện làm nhiều luồng xác thực cho trang web.
+
+1. Guard
+Trong Laravel, Authentication có thể định nghĩa được nhiều guard, mỗi guard tương ứng với một thành phần xác thực khác nhau. Với demo này mình cần hai cái đối tượng là user và admin.
+
+Mở file config\auth.php ra và chúng có thể thấy guard được config ở trong đây. Laravel đã làm sẵn cho chúng ta 2 guard user và api, bây giờ chúng ta làm thêm một cái cho admin nữa là được.
+
+Tìm đến phần guards và sửa thành như sau:
+
+    'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        'api' => [
+            'driver' => 'token',
+            'provider' => 'users',
+        ],
+
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+    ],
+
+Đoạn code trên thì guard cho user được config mặc định là web.
+
+Tiếp theo, kéo xuống phần providers và sửa:
+
+    'providers' => [
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\User::class,
+        ],
+
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class, 
+        ],
+    ],
+
+2. Routes
+Thông thường các route của hai trang này có thể viết chung một file route là web.php cũng được nhưng theo mình nghĩ thì chúng ta nên tách thêm một cái file route dành riêng cho admin thì sẽ dễ dàng sử dụng hơn.
+
+Trong folder route tạo một file admin.php và config để các route được khai báo trong file này có thể chạy được đúng cách.
+
+Mở file app/Providers/RouteServiceProvider.php và sửa như sau:
+
+    public function boot()
+    {
+        $this->configureRateLimiting();
+
+        $this->routes(function () {
+            Route::prefix('api')
+                ->middleware('api')
+                ->namespace($this->namespace)
+                ->group(base_path('routes/api.php'));
+
+            Route::middleware('web')
+                ->namespace($this->namespace)
+                ->group(base_path('routes/web.php'));
+
+            Route::middleware('web')
+                ->prefix('admin')
+                ->namespace($this->namespace)
+                ->group(base_path('routes/admin.php'));
+        });
+    }
+
+Trên đây mình đã định nghĩa một nhóm route có prefix là admin nằm trong file routes/admin.php rồi, như vậy trong file route/admin.php thay vì địng nghĩa đường link admin/login thì mình chỉ cần định nghĩa chúng với đường link /login tương tự như bên web.
+
+Định nghĩa các route cho admin trong file routes/admin.php
+
+<?php
+
+use App\Http\Controllers\Admin\Auth\LoginController;
+use App\Http\Controllers\Admin\HomeController;
+use Illuminate\Support\Facades\Route;
+
+Route::match(['get', 'post'], '/login', [LoginController::class, 'login'])->name('admin.login');
+Route::middleware('auth:admin')->group(function (){
+    Route::get('/', [HomeController::class, 'index'])->name('dashboard');
+});
+
+Với route này khi bạn truy cập đường dẫn /admin nó sẽ tìm tới controller app/Controller/Admin/HomeController và thực hiện các hành động trong hàm index. Middleware phải là auth:admin (middleware này thực hiện với guard là admin).
+
+Định nghĩa các route cho admin trong file routes/web.php
+
+<?php
+
+use App\Http\Controllers\User\Auth\LoginController;
+use App\Http\Controllers\User\HomeController;
+use Illuminate\Support\Facades\Route;
+
+Route::match(['get', 'post'], '/login', [LoginController::class, 'login'])->name('login');
+Route::middleware('auth')->group(function (){
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+});
+
+
+Phần route user cũng như vậy nhưng chỉ cần dùng middleware auth là được rồi, mặc định của laravel sẽ thực hiện với guard web (trỏ vào user).
+
+3. Controllers
+a. Admin
+Tạo LoginController cho guard admin bằng lệnh
+
+php artisan make:controller Admin/Auth/LoginController
+
+Sửa file app\Http\Controllers\Admin\Auth\LoginController.php như dưới đây
+
+<?php
+
+namespace App\Http\Controllers\Admin\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class LoginController extends Controller
+{
+    public function login(Request $request)
+    {
+        if ($request->getMethod() == 'GET') {
+            return view('admin.auth.login');
+        }
+
+        $credentials = $request->only(['email', 'password']);
+        if (Auth::guard('admin')->attempt($credentials)) {
+            return redirect()->route('dashboard');
+        } else {
+            return redirect()->back()->withInput();
+        }
+    }
+}
+
+Tạo HomeController cho guard admin bằng lệnh
+
+php artisan make:controller Admin/HomeController
+
+Sửa file app\Http\Controllers\Admin\HomeController.php như dưới đây
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class HomeController extends Controller
+{
+    public function index()
+    {
+        $user = Auth::guard('admin')->user();
+        echo 'Xin chào Admin, '. $user->name;
+    }
+}
+
+
+b. User
+Tạo LoginController cho guard user bằng lệnh
+
+php artisan make:controller User/Auth/LoginController
+
+Sửa file app\Http\Controllers\User\Auth\LoginController.php như dưới đây
+
+<?php
+
+namespace App\Http\Controllers\User\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class LoginController extends Controller
+{
+    public function login(Request $request)
+    {
+        if ($request->getMethod() == 'GET') {
+            return view('user.auth.login');
+        }
+
+        $credentials = $request->only(['email', 'password']);
+        if (Auth::attempt($credentials)) {
+            return redirect()->route('home');
+        } else {
+            return redirect()->back()->withInput();
+        }
+    }
+}
+
+
+Tạo HomeController cho guard user bằng lệnh
+
+php artisan make:controller User/HomeController
+
+Sửa file App\Http\Controllers\User\HomeController.php như dưới đây
+
+<?php
+
+namespace App\Http\Controllers\User;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class HomeController extends Controller
+{
+    public function index()
+    {
+        $user = Auth::user();
+        echo 'Xin chào User, '. $user->name;
+    }
+}
+
+
+4. Giao diện Login
+Dựng giao diện cho các trang mà nãy giờ chúng ta gọi đến trong controller. Trong bài viết này mình chỉ dựng giao diện đơn giản. Mỗi bạn có một cách riêng có thể tự dựng hoặc dùng themes tùy mọi người.
+
+Tạo file giao diện login cho guard admin trong resoures/view/admin/auth/login.blade.php
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login</title>
+</head>
+<body>
+<form method="POST" action="{{ route('admin.login') }}">
+    @csrf
+    <h1>Admin</h1>
+    <input type="text" name="email" placeholder="Nhập địa chỉ email">
+    <input type="password" name="password" placeholder="Nhập mật khẩu">
+    <button type="submit">Đăng nhập</button>
+</form>
+</body>
+</html>
+
+
+Tương tự tạo file giao diện login cho guard user trong resoures/view/user/auth/login.blade.php
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Login</title>
+</head>
+<body>
+<form method="POST" action="{{ route('login') }}">
+    @csrf
+    <h1>User</h1>
+    <input type="text" name="email" placeholder="Nhập địa chỉ email">
+    <input type="password" name="password" placeholder="Nhập mật khẩu">
+    <button type="submit">Đăng nhập</button>
+</form>
+</body>
+</html>
+
+
+III. Tổng kết
+Chạy lệnh sau và mở trình duyệt để test thành quả nào
+
+php artisan serve
